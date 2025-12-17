@@ -8,8 +8,11 @@ import (
 	"price_generator/generator"
 	"price_generator/kafka"
 	"price_generator/logger"
+	"sync"
 	"time"
 )
+
+var wg sync.WaitGroup
 
 func main() {
 	logger.Info("Price Generator Service started")
@@ -27,12 +30,19 @@ func main() {
 	for range ticker.C {
 		log.Println("--New tick--")
 		for _, symbol := range config.Symbols {
-			last := lastPrices[symbol]
-			msg := generator.GeneratePrice(symbol, last)
-			lastPrices[symbol] = msg.Price
-			producer.Send(ctx, msg)
-			logger.Info("Sent %s price %.2f", msg.Symbol, msg.Price)
+			wg.Add(1)
+			go func(sym string) {
+				defer wg.Done()
+				last := lastPrices[symbol]
+				msg := generator.GeneratePrice(symbol, last)
+				lastPrices[symbol] = msg.Price
+				producer.Send(ctx, msg)
+				logger.Info("Sent %s price %.2f", msg.Symbol, msg.Price)
+			}(symbol)
 		}
+		wg.Wait()
+		log.Println("Tick complete")
 	}
+
 	logger.Info("Price Generator Service stopped")
 }
