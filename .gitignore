@@ -1,0 +1,33 @@
+# Binaries
+price_generator/price_generator
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Dependencies
+vendor/
+
+# Test coverage
+*.out
+coverage.txt
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs (if you create log files)
+*.log
+logs/
