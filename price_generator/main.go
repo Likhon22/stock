@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"price_generator/config"
 	"price_generator/generator"
 	"price_generator/kafka"
@@ -13,6 +13,7 @@ import (
 )
 
 var wg sync.WaitGroup
+var priceLock sync.RWMutex
 
 func main() {
 	logger.Info("Price Generator Service started")
@@ -21,7 +22,9 @@ func main() {
 	lastPrices := make(map[string]float64)
 
 	for _, symbol := range config.Symbols {
+
 		lastPrices[symbol] = 100 + 50*rand.Float64()
+
 		log.Printf("Initialized %s with starting price: %.2f", symbol, lastPrices[symbol])
 	}
 	ctx := context.Background()
@@ -33,9 +36,13 @@ func main() {
 			wg.Add(1)
 			go func(sym string) {
 				defer wg.Done()
-				last := lastPrices[symbol]
-				msg := generator.GeneratePrice(symbol, last)
-				lastPrices[symbol] = msg.Price
+				priceLock.Lock()
+				last := lastPrices[sym]
+				priceLock.Unlock()
+				msg := generator.GeneratePrice(sym, last)
+				priceLock.Lock()
+				lastPrices[sym] = msg.Price
+				priceLock.Unlock()
 				producer.Send(ctx, msg)
 				logger.Info("Sent %s price %.2f", msg.Symbol, msg.Price)
 			}(symbol)
