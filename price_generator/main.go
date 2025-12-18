@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-var wg sync.WaitGroup
 var priceLock sync.RWMutex
 
 func main() {
@@ -30,26 +29,33 @@ func main() {
 	ctx := context.Background()
 	ticker := time.NewTicker(config.Interval)
 	defer ticker.Stop()
+	jobs := make(chan string, len(config.Symbols))
+	for w := 0; w < 5; w++ {
+		go worker(w, jobs, lastPrices, producer, ctx)
+	}
 	for range ticker.C {
-		log.Println("--New tick--")
 		for _, symbol := range config.Symbols {
-			wg.Add(1)
-			go func(sym string) {
-				defer wg.Done()
-				priceLock.Lock()
-				last := lastPrices[sym]
-				priceLock.Unlock()
-				msg := generator.GeneratePrice(sym, last)
-				priceLock.Lock()
-				lastPrices[sym] = msg.Price
-				priceLock.Unlock()
-				producer.Send(ctx, msg)
-				logger.Info("Sent %s price %.2f", msg.Symbol, msg.Price)
-			}(symbol)
+
+			jobs <- symbol
 		}
-		wg.Wait()
-		log.Println("Tick complete")
 	}
 
 	logger.Info("Price Generator Service stopped")
+}
+
+func worker(id int, jobs <-chan string, lastPrices map[string]float64, producer *kafka.Producer, ctx context.Context) {
+	for symbol := range jobs {
+		priceLock.RLock()
+		last := lastPrices[symbol]
+		priceLock.RUnlock()
+
+		msg := generator.GeneratePrice(symbol, last)
+
+		priceLock.Lock()
+		lastPrices[symbol] = msg.Price
+		priceLock.Unlock()
+
+		producer.Send(ctx, msg)
+		logger.Info("Worker %d processed %s", id, symbol)
+	}
 }
