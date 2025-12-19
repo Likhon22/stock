@@ -33,7 +33,7 @@ func (r *priceRepository) Get(symbol string) (float64, bool) {
 
 }
 func (r *priceRepository) Set(symbol string, price float64) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.prices[symbol] = price
 }

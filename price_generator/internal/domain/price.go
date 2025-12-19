@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type Price struct {
-	Symbol    string
-	Value     float64
-	Timestamp time.Time
+	Symbol    string    `json:"symbol"`
+	Value     float64   `json:"price"`
+	Timestamp time.Time `json:"timestamp"`
 }
