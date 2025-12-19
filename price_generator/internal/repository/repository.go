@@ -26,14 +26,14 @@ func NewPriceRepository(symbols []string) PriceRepository {
 }
 
 func (r *priceRepository) Get(symbol string) (float64, bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	price, ok := r.prices[symbol]
 	return price, ok
 
 }
 func (r *priceRepository) Set(symbol string, price float64) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	r.prices[symbol] = price
 }

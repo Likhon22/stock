@@ -19,13 +19,13 @@ type PriceService interface {
 type priceService struct {
 	generator  domain.PriceGenerator
 	repository repository.PriceRepository
-	publisher  kafka.KafkaProducer
+	publisher  *kafka.KafkaProducer
 }
 
 func NewPriceService(
 	gen domain.PriceGenerator,
 	repo repository.PriceRepository,
-	publisher kafka.KafkaProducer,
+	publisher *kafka.KafkaProducer,
 
 ) PriceService {
 	return &priceService{
