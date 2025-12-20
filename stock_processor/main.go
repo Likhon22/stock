@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
 	"stock-processor/config"
 	infra "stock-processor/internal/kafka"
 	"stock-processor/internal/model"
 	"sync"
+	"syscall"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -25,6 +28,13 @@ func main() {
     
 ctx, cancel := context.WithCancel(context.Background())
 defer cancel()
+sigChan:=make(chan os.Signal, 1)
+signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+go func ()  {
+	  sig := <-sigChan
+    fmt.Printf("\nReceived signal %v, shutting down...\n", sig)
+    cancel()
+}()
     jobs:=make(chan kafka.Message, len(config.Symbols)*2)
   
 		 for i := 0; i < config.WorkerCount; i++ {
