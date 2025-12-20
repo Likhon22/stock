@@ -7,13 +7,14 @@ import (
 	"stock-processor/config"
 	infra "stock-processor/internal/kafka"
 	"stock-processor/internal/model"
+	"sync"
 
 	"github.com/segmentio/kafka-go"
 )
 
 func main() {
     fmt.Println("Stock Processor started")
-    
+    var wg sync.WaitGroup
     // Create consumer
     consumer := infra.NewKafkaConsumer(
         config.KafkaBroker,
@@ -22,26 +23,39 @@ func main() {
     )
     defer consumer.Close()  // Don't forget to close!
     
-    ctx := context.Background()
-    
-    // Sequential loop - read one by one
-    for {
-        msg, err := consumer.ReadMessage(ctx)
-        if err != nil {
-            fmt.Printf("Error reading: %v\n", err)
-            break
-        }
-        
-        // Parse JSON
-   go func(message kafka.Message) {
-            var stock model.StockPrice
-            if err := json.Unmarshal(message.Value, &stock); err != nil {
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+    jobs:=make(chan kafka.Message, len(config.Symbols)*2)
+  
+		 for i := 0; i < config.WorkerCount; i++ {
+			wg.Add(1)
+			go worker(jobs,&wg)
+		 }
+
+		 for{
+
+			msg,err:=consumer.ReadMessage(ctx)
+			  if err != nil {
+        break
+    }
+	   	jobs<-msg
+		 }
+   
+  close(jobs)		 
+	wg.Wait()	
+}
+
+
+func worker(jobs <-chan kafka.Message,wg *sync.WaitGroup)  {
+	defer wg.Done()
+	for msg := range jobs {
+		var stock model.StockPrice
+            if err := json.Unmarshal(msg.Value, &stock); err != nil {
                 fmt.Printf("Error parsing: %v\n", err)
-                return
+               continue 
             }
             
-            // Process concurrently (MULTIPLE at same time)
-            fmt.Printf("Received: %s at $%.2f\n", stock.Symbol, stock.Price)
-        }(msg) 
-    }
+						   fmt.Printf("Received: %s at $%.2f\n", stock.Symbol, stock.Price)
+	}
+	
 }
