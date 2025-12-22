@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,10 +11,15 @@ import (
 	"stock-processor/config"
 	"stock-processor/db"
 
+	"stock-processor/internal/handler"
 	infra "stock-processor/internal/kafka"
 	"stock-processor/internal/repository"
+	"stock-processor/internal/routes"
+
 	"stock-processor/internal/service"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -22,6 +28,7 @@ type Application struct {
     consumer *infra.KafkaConsumer
     ctx      context.Context
     cancel   context.CancelFunc
+    r        *chi.Mux
 }
 
 func NewApp() *Application {
@@ -31,15 +38,21 @@ func NewApp() *Application {
         config.KafkaTopic,
         config.ConsumerGroup,
     )
+ 
     rdb :=db.ConnectRedis("localhost:6379", 0)
+ 
+    
     processorRepo:=repository.NewPriceRepository(rdb)
     processorService := service.NewProcessorService(processorRepo);
-    
+    processorHandler:=handler.NewHandler(processorService)
+    processorRoutes:=routes.SetUpRoutes(processorHandler)
+    processorRoutes.Use(middleware.Logger)
     return &Application{
         service:  processorService,
         consumer: consumer,
         ctx:      ctx,
         cancel:   cancel,
+        r:processorRoutes,
     }
 }
 
@@ -67,7 +80,13 @@ func (a *Application) Run() error {
     }()
     
     fmt.Println("Workers started, consuming messages...")
-    
+ // Start HTTP server in background (non-blocking)
+  go func() {
+    fmt.Println("HTTP server starting on :3000")
+    if err := http.ListenAndServe(":3000", a.r); err != nil {
+        fmt.Printf("HTTP server error: %v\n", err)
+    }
+  }()
     // Main loop - BOOTSTRAP reads from Kafka!
     for {
         msg, err := a.consumer.ReadMessage(a.ctx) 

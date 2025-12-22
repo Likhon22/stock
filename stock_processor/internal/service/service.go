@@ -15,6 +15,9 @@ import (
 type ProcessorService interface {
     StartWorkers(ctx context.Context, jobs <-chan kafka.Message, workerCount int) *sync.WaitGroup
     ProcessMessage(ctx context.Context, msg kafka.Message) error
+    GetHistory(ctx context.Context, symbol string, limit int)([]float64, error)
+    GetCache(ctx context.Context, symbol string)(float64, error)
+    GetAll(ctx context.Context)(map[string]float64, error) 
 }
 
 
@@ -73,4 +76,16 @@ func (s *processorService) worker(ctx context.Context, id int, jobs <-chan kafka
     }
 	}
     fmt.Printf("Worker %d stopped\n", id)
+}
+
+
+func (s *processorService) GetCache(ctx context.Context, symbol string)(float64, error)  {
+     return s.repo.GetCache(ctx,symbol)
+}
+func (s *processorService) GetAll(ctx context.Context)(map[string]float64, error)  {
+     return s.repo.GetAll(ctx)
+}
+
+func (s *processorService) GetHistory(ctx context.Context, symbol string, limit int)([]float64, error)  {
+     return s.repo.GetHistory(ctx,symbol,limit)
 }
