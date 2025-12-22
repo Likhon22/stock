@@ -19,7 +19,6 @@ import (
 	"stock-processor/internal/service"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -46,7 +45,7 @@ func NewApp() *Application {
     processorService := service.NewProcessorService(processorRepo);
     processorHandler:=handler.NewHandler(processorService)
     processorRoutes:=routes.SetUpRoutes(processorHandler)
-    processorRoutes.Use(middleware.Logger)
+
     return &Application{
         service:  processorService,
         consumer: consumer,
