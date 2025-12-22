@@ -8,7 +8,10 @@ import (
 	"syscall"
 
 	"stock-processor/config"
+	"stock-processor/db"
+
 	infra "stock-processor/internal/kafka"
+	"stock-processor/internal/repository"
 	"stock-processor/internal/service"
 
 	"github.com/segmentio/kafka-go"
@@ -28,7 +31,9 @@ func NewApp() *Application {
         config.KafkaTopic,
         config.ConsumerGroup,
     )
-    processorService := service.NewProcessorService();
+    rdb :=db.ConnectRedis("localhost:6379", 0)
+    processorRepo:=repository.NewPriceRepository(rdb)
+    processorService := service.NewProcessorService(processorRepo);
     
     return &Application{
         service:  processorService,

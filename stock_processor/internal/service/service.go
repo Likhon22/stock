@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"stock-processor/internal/model"
+	"stock-processor/internal/repository"
 
 	"sync"
 
@@ -18,12 +19,14 @@ type ProcessorService interface {
 
 
 type processorService struct {
-
+ repo repository.Repository
 }
 
 // Constructor - create new service
-func NewProcessorService() ProcessorService {
-    return &processorService{}
+func NewProcessorService(repo repository.Repository) ProcessorService {
+    return &processorService{
+        repo: repo,
+    }
 }
 
 func (s *processorService) StartWorkers(ctx context.Context, jobs <-chan kafka.Message, workerCount int) *sync.WaitGroup  {
@@ -42,6 +45,13 @@ func (s *processorService) ProcessMessage(ctx context.Context, msg kafka.Message
     
     if err := json.Unmarshal(msg.Value, &stock); err != nil {
         return fmt.Errorf("failed to parse message: %w", err)
+    }
+   
+   if err := s.repo.SetCache(ctx, stock); err != nil {
+    fmt.Printf("Cache error for %s: %v\n", stock.Symbol, err)
+  }
+      if err :=  s.repo.AddToHistory(ctx,stock);err != nil {
+      fmt.Printf("⚠️history error for %s: %v\n", stock.Symbol, err)
     }
     
     fmt.Printf("Received: %s at $%.2f at %s\n", 
