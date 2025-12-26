@@ -55,13 +55,20 @@ return	r.rdb.Get(ctx,symbol).Float64()
 
 func (r *repository) GetAll(ctx context.Context) (map[string]float64,error)  {
 	prices:=make(map[string]float64)
-	
+	pipe:=r.rdb.Pipeline()
+	cmds:=make(map[string]*redis.StringCmd)
 	for _, symbol := range config.Symbols {
-		price,err:=  r.rdb.Get(ctx,symbol).Float64()
-		 if err == nil {  
-            prices[symbol] = price
-        }
+		cmds[symbol]=pipe.Get(ctx,symbol)
+	}
+	_,err:=pipe.Exec(ctx)
+	if err!=nil {
+		return nil,err
+	}
+	for symbol, cmd := range cmds {
+	if price,err:=	cmd.Float64();err==nil {
 		prices[symbol]=price
+	}
+		
 	}
 	return prices,nil
 }
