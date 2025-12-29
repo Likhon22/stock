@@ -30,6 +30,7 @@ func NewSubscriber(client *redis.Client, parentCtx context.Context) *Subscriber 
 }
 
 func (s *Subscriber) Subscribe(channel string) error {
+	s.pubsub = s.client.Subscribe(s.ctx, channel)
 
 	_, err := s.pubsub.Receive(s.ctx)
 	if err != nil {
