@@ -581,7 +581,6 @@ This project is open source and available under the [MIT License](LICENSE).
 **Likhon**
 
 - GitHub: [@Likhon22](https://github.com/Likhon22)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
 
 ---
 
