@@ -20,11 +20,20 @@ type Application struct {
 	cancel     context.CancelFunc
 }
 
+// getEnv reads environment variable with fallback to default value
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func NewApp() *Application {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Create Redis connection
-	rdb := redis.ConnectRedis("localhost:6379", 0, ctx)
+	redisAddr := getEnv("REDIS_ADDR", "localhost:6379")
+	rdb := redis.ConnectRedis(redisAddr, 0, ctx)
 
 	// Create subscriber
 	subscriber := redis.NewSubscriber(rdb, ctx)
