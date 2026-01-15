@@ -30,6 +30,14 @@ type Application struct {
     r        *chi.Mux
 }
 
+// getEnv reads environment variable with fallback to default value
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func NewApp() *Application {
     ctx, cancel := context.WithCancel(context.Background())
     consumer := infra.NewKafkaConsumer(
@@ -38,7 +46,8 @@ func NewApp() *Application {
         config.ConsumerGroup,
     )
  
-    rdb :=db.ConnectRedis("localhost:6379", 0)
+    redisAddr := getEnv("REDIS_ADDR", "localhost:6379")
+    rdb :=db.ConnectRedis(redisAddr, 0)
  
     
     processorRepo:=repository.NewPriceRepository(rdb)

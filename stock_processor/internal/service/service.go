@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"stock-processor/internal/model"
 	"stock-processor/internal/repository"
+	"time"
 
 	"sync"
 
@@ -15,9 +16,9 @@ import (
 type ProcessorService interface {
 	StartWorkers(ctx context.Context, jobs <-chan kafka.Message, workerCount int) *sync.WaitGroup
 	ProcessMessage(ctx context.Context, msg kafka.Message) error
-	GetHistory(ctx context.Context, symbol string, limit int) ([]float64, error)
+	GetHistory(ctx context.Context, symbol string, limit int) ([]model.StockPrice, error)
 	GetCache(ctx context.Context, symbol string) (float64, error)
-	GetAll(ctx context.Context) (map[string]float64, error)
+	GetAll(ctx context.Context) ([]model.StockPrice, error)
 }
 
 type processorService struct {
@@ -83,10 +84,22 @@ func (s *processorService) worker(ctx context.Context, id int, jobs <-chan kafka
 func (s *processorService) GetCache(ctx context.Context, symbol string) (float64, error) {
 	return s.repo.GetCache(ctx, symbol)
 }
-func (s *processorService) GetAll(ctx context.Context) (map[string]float64, error) {
-	return s.repo.GetAll(ctx)
+func (s *processorService) GetAll(ctx context.Context) ([]model.StockPrice, error) {
+	rawmap, err := s.repo.GetAll(ctx)
+	if err != nil {
+		return []model.StockPrice{}, err
+	}
+	var stock []model.StockPrice
+	for symbol, price := range rawmap {
+		stock = append(stock, model.StockPrice{
+			Symbol:    symbol,
+			Price:     price,
+			Timestamp: time.Now(),
+		})
+	}
+	return stock, nil
 }
 
-func (s *processorService) GetHistory(ctx context.Context, symbol string, limit int) ([]float64, error) {
+func (s *processorService) GetHistory(ctx context.Context, symbol string, limit int) ([]model.StockPrice, error) {
 	return s.repo.GetHistory(ctx, symbol, limit)
 }

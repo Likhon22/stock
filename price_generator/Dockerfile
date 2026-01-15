@@ -11,7 +11,7 @@ CMD [ "go","run","main.go" ]
 
 FROM base AS builder
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux -o bin/main ./main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/main ./main.go
 
 
 

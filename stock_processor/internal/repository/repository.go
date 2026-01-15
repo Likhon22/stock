@@ -7,6 +7,7 @@ import (
 	"stock-processor/config"
 	"stock-processor/internal/model"
 	"strconv"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -20,7 +21,7 @@ type Repository interface {
 	AddToHistory(ctx context.Context, stock model.StockPrice) error
 	GetCache(ctx context.Context, symbol string) (float64, error)
 	GetAll(ctx context.Context) (map[string]float64, error)
-	GetHistory(ctx context.Context, symbol string, limit int) ([]float64, error)
+	GetHistory(ctx context.Context, symbol string, limit int) ([]model.StockPrice, error)
 	PublishUpdate(ctx context.Context, stock model.StockPrice) error
 }
 
@@ -74,21 +75,25 @@ func (r *repository) GetAll(ctx context.Context) (map[string]float64, error) {
 	return prices, nil
 }
 
-func (r *repository) GetHistory(ctx context.Context, symbol string, limit int) ([]float64, error) {
+func (r *repository) GetHistory(ctx context.Context, symbol string, limit int) ([]model.StockPrice, error) {
 	key := symbol + ":history"
 	values, err := r.rdb.ZRevRange(ctx, key, 0, int64(limit-1)).Result()
 	if err != nil {
 		return nil, err
 	}
-	prices := make([]float64, len(values))
+	stocks := make([]model.StockPrice, len(values))
 	for i, val := range values {
 		price, parseErr := strconv.ParseFloat(val, 64)
 		if parseErr != nil {
 			return nil, fmt.Errorf("failed to parse price at index %d: %w", i, parseErr)
 		}
-		prices[i] = price
+		stocks[i] = model.StockPrice{
+			Symbol:    symbol,
+			Price:     price,
+			Timestamp: time.Now(),
+		}
 	}
-	return prices, nil
+	return stocks, nil
 }
 
 func (r *repository) PublishUpdate(ctx context.Context, stock model.StockPrice) error {

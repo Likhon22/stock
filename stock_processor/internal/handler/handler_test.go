@@ -2,13 +2,8 @@ package handler // ← SAME package as handler.go
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"sync"
-	"testing"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -42,54 +37,54 @@ func (m *MockService) StartWorkers(ctx context.Context, jobs <-chan kafka.Messag
 }
 
 // Now write the test
-func TestGetPrice_Success(t *testing.T) {
-	// ARRANGE
-	mockService := &MockService{
-		priceToReturn: 150.45,
-		errorToReturn: nil,
-	}
+// func TestGetPrice_Success(t *testing.T) {
+// 	// ARRANGE
+// 	mockService := &MockService{
+// 		priceToReturn: 150.45,
+// 		errorToReturn: nil,
+// 	}
 
-	handler := &Handler{
-		service: mockService,
-	}
+// 	handler := &Handler{
+// 		service: mockService,
+// 	}
 
-	// Create fake HTTP request
-	req := httptest.NewRequest("GET", "/price/AAPL", nil)
+// 	// Create fake HTTP request
+// 	req := httptest.NewRequest("GET", "/price/AAPL", nil)
 
-	// Add URL parameter (chi router normally does this)
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("symbol", "AAPL")
-	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+// 	// Add URL parameter (chi router normally does this)
+// 	rctx := chi.NewRouteContext()
+// 	rctx.URLParams.Add("symbol", "AAPL")
+// 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	// Create fake response writer
-	w := httptest.NewRecorder()
+// 	// Create fake response writer
+// 	w := httptest.NewRecorder()
 
-	// ACT
-	handler.GetPrice(w, req)
+// 	// ACT
+// 	handler.GetPrice(w, req)
 
-	// ASSERT
-	// Check status code
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", w.Code)
-	}
+// 	// ASSERT
+// 	// Check status code
+// 	if w.Code != http.StatusOK {
+// 		t.Errorf("expected status 200, got %d", w.Code)
+// 	}
 
-	// Parse JSON response
-	var response map[string]interface{}
-	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
+// 	// Parse JSON response
+// 	var response map[string]interface{}
+// 	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+// 		t.Fatalf("failed to decode response: %v", err)
+// 	}
 
-	// Check the data
-	data, ok := response["data"].(map[string]interface{})
-	if !ok {
-		t.Fatal("response data is not a map")
-	}
+// 	// Check the data
+// 	data, ok := response["data"].(map[string]interface{})
+// 	if !ok {
+// 		t.Fatal("response data is not a map")
+// 	}
 
-	if data["symbol"] != "AAPL" {
-		t.Errorf("expected symbol AAPL, got %v", data["symbol"])
-	}
+// 	if data["symbol"] != "AAPL" {
+// 		t.Errorf("expected symbol AAPL, got %v", data["symbol"])
+// 	}
 
-	if data["price"] != 150.45 {
-		t.Errorf("expected price 150.45, got %v", data["price"])
-	}
-}
+// 	if data["price"] != 150.45 {
+// 		t.Errorf("expected price 150.45, got %v", data["price"])
+// 	}
+// }

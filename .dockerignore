@@ -1,0 +1,45 @@
+# Root level dockerignore (if you build from root)
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Each service's files
+price_generator/bin/
+stock_processor/bin/
+stock_websocket/bin/
+
+# Test files
+**/*_test.go
+**/coverage.out
+**/*.test
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Docker
+docker-compose.yml
+
+# Misc
+tmp/
+temp/
+logs/
+*.log
